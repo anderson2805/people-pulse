@@ -7,7 +7,7 @@ import logging
 from bs4 import BeautifulSoup
 from backend.mongo_connect import MongoHandler
 from backend.llm import OpenAIChat
-
+import platform
 # Check if images folder exists, if not create it
 if not os.path.exists('images'):
     os.makedirs('images')
@@ -237,11 +237,13 @@ async def classify_li_async(profile_urls, max_concurrent_connections=3):
     return results
 
 def classify_li(profile_urls, max_concurrent_connections=3):
-    loop = asyncio.ProactorEventLoop()
-    asyncio.set_event_loop(loop)
+    if platform.system() == 'Windows':
+        loop = asyncio.ProactorEventLoop()
+        asyncio.set_event_loop(loop)
+    else:
+        loop = asyncio.get_event_loop()
+    
     results = loop.run_until_complete(classify_li_async(profile_urls, max_concurrent_connections))
-
-
     return results
 
 if __name__ == "__main__":
