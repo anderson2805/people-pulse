@@ -5,6 +5,21 @@ from io import BytesIO
 from st_download_button import download_button
 # Add upload excel file
 st.subheader("Enhancing Data with Perplexity and LinkedIn Contexts: LLM Classification of Technology Domains and SSOC (see guide for more info)")
+st.markdown("""The Pulsing process is a series of steps that enriches the data in the output Excel file with data from the web.\nThe process involves the following steps:
+                
+1. Fill in the [Template](https://drive.google.com/uc?export=download&id=1lcKRFtCSTrQ08PAigFJb1as5TKU822L6), to obtain the "Perplexity Search Query" (Column N).
+2. Search on [Perplexity.AI](https://perplexity.ai) using the prompt.
+3. Fill up the Perplexity Context columns in the template.
+4. Upload the filled template to the Enrichment page. Our program will do the following:
+
+    a. Automatically fill in LinkedIn context based on the LinkedIn URLs given.
+    
+    b. Classify the Technology Domains and SSOC based on the Perplexity and LinkedIn contexts.
+5. You will receive the enriched output Excel file for download. Copy the data to the Engagement Repo excel in teamsite on eworkplace.
+
+(NOTE: To paste by values, right-click on the cell and select "Paste Special" -> "Values Only", or use the shortcut "Ctrl + Shift + V")""")
+     
+
 
 def process_excel(uploaded_file):
     return update_output_excel(uploaded_file)
