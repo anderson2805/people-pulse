@@ -3,10 +3,10 @@ import streamlit as st
 with st.expander("## **Pulsing Process**", expanded=True):
     st.markdown("""The Pulsing process is a series of steps that enriches the data in the output Excel file with data from the web.\nThe process involves the following steps:
                 
-1. Fill in the [Template](https://drive.google.com/uc?export=download&id=1lcKRFtCSTrQ08PAigFJb1as5TKU822L6), to obtain the "Perplexity Search Query" (Column ).
+1. Fill in the [Template](https://drive.google.com/uc?export=download&id=1lcKRFtCSTrQ08PAigFJb1as5TKU822L6), to obtain the "Perplexity Search Query" (Column N).
 2. Search on [Perplexity.AI](https://perplexity.ai) using the prompt.
 3. Fill up the Perplexity Context columns in the template.
-4. Upload the filled template to the Pulsing page.
+4. Upload the filled template to the Enrichment page.
 
     a. Automatically fill in LinkedIn context based on the LinkedIn URLs given.
     

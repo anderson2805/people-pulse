@@ -11,7 +11,7 @@ codebook = st.Page(
 )
 
 pulsing = st.Page(
-    "frontend/pulsing.py", title="Generate Output", icon=":material/experiment:", default=True
+    "frontend/pulsing.py", title="Enrichment", icon=":material/experiment:", default=True
 )
 
 # dashboard = st.Page(
