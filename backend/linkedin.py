@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from backend.mongo_connect import MongoHandler
 from backend.llm import OpenAIChat
 import platform
+
 # Check if images folder exists, if not create it
 if not os.path.exists('images'):
     os.makedirs('images')
@@ -239,12 +240,17 @@ async def classify_li_async(profile_urls, max_concurrent_connections=3):
 def classify_li(profile_urls, max_concurrent_connections=3):
     if platform.system() == 'Windows':
         loop = asyncio.ProactorEventLoop()
-        asyncio.set_event_loop(loop)
     else:
-        loop = asyncio.get_event_loop()
-    
-    results = loop.run_until_complete(classify_li_async(profile_urls, max_concurrent_connections))
-    return results
+        import nest_asyncio
+        # Apply nest_asyncio to allow nested event loops
+        nest_asyncio.apply()
+        loop = asyncio.new_event_loop()
+        
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(classify_li_async(profile_urls, max_concurrent_connections))
+    finally:
+        loop.close()
 
 if __name__ == "__main__":
     profile_urls = ['https://www.linkedin.com/in/arumkang/', 'https://www.linkedin.com/in/jindrichkarasek/']
