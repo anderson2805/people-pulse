@@ -6,7 +6,7 @@ with st.expander("## **Pulsing Process**", expanded=True):
 1. Fill in the [Template](https://drive.google.com/uc?export=download&id=1lcKRFtCSTrQ08PAigFJb1as5TKU822L6), to obtain the "Perplexity Search Query" (Column N).
 2. Search on [Perplexity.AI](https://perplexity.ai) using the prompt.
 3. Fill up the Perplexity Context columns in the template.
-4. Upload the filled template to the Enrichment page.
+4. Upload the filled template to the Enrichment page. Our program will do the following:
 
     a. Automatically fill in LinkedIn context based on the LinkedIn URLs given.
     
