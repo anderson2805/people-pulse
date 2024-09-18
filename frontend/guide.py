@@ -11,7 +11,8 @@ with st.expander("## **Pulsing Process**", expanded=True):
     a. Automatically fill in LinkedIn context based on the LinkedIn URLs given.
     
     b. Classify the Technology Domains and SSOC based on the Perplexity and LinkedIn contexts.
-5. You will receive the enriched output Excel file for download. Copy the data to the repo file in teamsite on eworkplace.""")
+5. You will receive the enriched output Excel file for download. Copy the data to the Engagement Repo excel in teamsite on eworkplace.
+(NOTE: To paste by values, right-click on the cell and select "Paste Special" -> "Values Only", or use the shortcut "Ctrl + Shift + V")""")
      
 with st.expander("## **Technology Domains Definition**"):
     # Read markdown file
