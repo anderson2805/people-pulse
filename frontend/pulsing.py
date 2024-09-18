@@ -4,7 +4,7 @@ from backend.generate_output import update_output_excel
 from io import BytesIO
 from st_download_button import download_button
 # Add upload excel file
-st.title("Enhancing Data with Perplexity and LinkedIn Contexts: LLM Classification of Technology Domains and SSOC (see guide for more info)")
+st.subheader("Enhancing Data with Perplexity and LinkedIn Contexts: LLM Classification of Technology Domains and SSOC (see guide for more info)")
 
 def process_excel(uploaded_file):
     return update_output_excel(uploaded_file)
