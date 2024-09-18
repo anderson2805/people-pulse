@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 from backend.mongo_connect import MongoHandler
 from backend.llm import OpenAIChat
 import platform
-
+from concurrent.futures import ThreadPoolExecutor
 # Check if images folder exists, if not create it
 if not os.path.exists('images'):
     os.makedirs('images')
@@ -238,19 +238,24 @@ async def classify_li_async(profile_urls, max_concurrent_connections=3):
     return results
 
 def classify_li(profile_urls, max_concurrent_connections=3):
-    if platform.system() == 'Windows':
-        loop = asyncio.ProactorEventLoop()
-    else:
-        import nest_asyncio
-        # Apply nest_asyncio to allow nested event loops
-        nest_asyncio.apply()
-        loop = asyncio.new_event_loop()
-        
-    asyncio.set_event_loop(loop)
-    try:
-        return loop.run_until_complete(classify_li_async(profile_urls, max_concurrent_connections))
-    finally:
-        loop.close()
+    def run_in_executor(_profile_urls):
+        def run_async():
+            if platform.system() == 'Windows':
+                loop = asyncio.ProactorEventLoop()
+            else:
+                loop = asyncio.new_event_loop()
+            
+            asyncio.set_event_loop(loop)
+            try:
+                return loop.run_until_complete(classify_li_async(_profile_urls, max_concurrent_connections))
+            finally:
+                loop.close()
+
+        with ThreadPoolExecutor() as executor:
+            future = executor.submit(run_async)
+            return future.result()
+
+    return run_in_executor(profile_urls)
 
 if __name__ == "__main__":
     profile_urls = ['https://www.linkedin.com/in/arumkang/', 'https://www.linkedin.com/in/jindrichkarasek/']
