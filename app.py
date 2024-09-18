@@ -1,4 +1,8 @@
 import streamlit as st
+import os
+
+os.system('playwright install')
+os.system('playwright install-deps')
 
 st.set_page_config(layout="wide")
 
