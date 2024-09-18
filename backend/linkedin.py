@@ -2,7 +2,7 @@ import os
 import asyncio
 from configparser import ConfigParser
 import streamlit as st
-from playwright.async_api import async_playwright
+from playwright.async_api import async_playwright, TimeoutError as PlaywrightTimeoutError
 import logging
 from bs4 import BeautifulSoup
 from backend.mongo_connect import MongoHandler
@@ -71,21 +71,26 @@ class LinkedInOperations:
                 
                 # Set the device name
                 page = await context.new_page()
-                await page.goto('https://www.linkedin.com/login')
+                await page.goto('https://www.linkedin.com/login', timeout=20000)
                 await page.fill('#username', self.username)
                 await page.fill('#password', self.password)
                 await page.click('button:has-text("Sign in")')
                 
                 # Add error handling and additional checks
+                # Wait for navigation and check for login challenges
                 try:
-                    await page.wait_for_selector('.feed-identity-module', timeout=30000)
-                except Exception as e:
-                    self.logger.error(f"Error after login attempt: {str(e)}")
+                    await page.wait_for_navigation(timeout=30000)
+                except PlaywrightTimeoutError:
+                    self.logger.warning("Navigation timeout after login attempt. Checking current page.")
+                
+                # Check for login challenges or CAPTCHA
+                if await self.check_for_login_challenge(page):
+                    self.logger.error("Login challenge or CAPTCHA detected. Manual intervention required.")
                     return None
                 
                 # Check if we're on the feed page
                 if 'feed' not in page.url:
-                    self.logger.error("Login unsuccessful, not redirected to feed page")
+                    self.logger.error(f"Login unsuccessful, current page: {page.url}")
                     return None
                 
                 cookies = await context.cookies()
@@ -98,6 +103,33 @@ class LinkedInOperations:
                 if browser:
                     await browser.close()
                     
+    async def check_for_login_challenge(self, page):
+        challenge_selectors = [
+            'input#challenge_response',  # Phone verification
+            'div.recaptcha-checkbox-border',  # reCAPTCHA
+            'input#captcha-internal',  # Internal CAPTCHA
+            'form#two-step-challenge'  # Two-step verification
+        ]
+        
+        for selector in challenge_selectors:
+            if await page.query_selector(selector):
+                return True
+        return False
+    
+    async def retry_with_exponential_backoff(self, coroutine, max_retries=3, base_delay=5):
+        retries = 0
+        while retries < max_retries:
+            try:
+                return await coroutine()
+            except Exception as e:
+                wait_time = base_delay * (2 ** retries)
+                self.logger.warning(f"Attempt {retries + 1} failed: {str(e)}. Retrying in {wait_time} seconds...")
+                await asyncio.sleep(wait_time)
+                retries += 1
+        
+        self.logger.error(f"All {max_retries} attempts failed")
+        raise Exception("Max retries exceeded")
+                        
     async def check_cookie_validity(self, cookie):
         async with async_playwright() as p:
             browser = None
@@ -109,14 +141,17 @@ class LinkedInOperations:
                 await context.add_cookies([cookie])
                 
                 page = await context.new_page()
-                await page.goto('https://www.linkedin.com/feed/', wait_until="networkidle", timeout=30000)
+                try:
+                    await page.goto('https://www.linkedin.com/feed/', wait_until="networkidle", timeout=60000)
+                except PlaywrightTimeoutError:
+                    self.logger.warning("Timeout while loading feed page. Checking if we're logged in anyway.")
                 
-                # Check if we're still on the feed page (indicating a successful login)
-                current_url = page.url
-                if 'feed' in current_url:
+                # Check if we're logged in by looking for specific elements
+                try:
+                    await page.wait_for_selector('div.feed-identity-module', timeout=10000)
                     self.logger.info("Cookie is valid")
                     return True
-                else:
+                except PlaywrightTimeoutError:
                     self.logger.info("Cookie is invalid or expired")
                     return False
             except Exception as e:
@@ -223,18 +258,18 @@ class LinkedInOperations:
         
         if existing_cookie:
             self.logger.info('Checking existing cookie validity')
-            is_valid = await self.check_cookie_validity(existing_cookie)
+            is_valid = await self.retry_with_exponential_backoff(lambda: self.check_cookie_validity(existing_cookie))
             if not is_valid:
                 self.logger.info('Existing cookie is invalid, attempting new login')
-                existing_cookie = await self.update_cookies()
+                existing_cookie = await self.retry_with_exponential_backoff(self.login_and_get_cookies)
                 if not existing_cookie:
-                    self.logger.error('Failed to obtain new cookie')
+                    self.logger.error('Failed to obtain new cookie after multiple attempts')
                     return dict(zip(profile_urls, [None] * len(profile_urls)))
         else:
             self.logger.info('No existing cookie found, attempting new login')
-            existing_cookie = await self.update_cookies()
+            existing_cookie = await self.retry_with_exponential_backoff(self.login_and_get_cookies)
             if not existing_cookie:
-                self.logger.error('Failed to obtain new cookie')
+                self.logger.error('Failed to obtain new cookie after multiple attempts')
                 return dict(zip(profile_urls, [None] * len(profile_urls)))
 
         tasks = [self.process_profile(url, existing_cookie) for url in profile_urls]
