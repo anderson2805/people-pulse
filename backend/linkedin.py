@@ -70,14 +70,23 @@ class LinkedInOperations:
                 )
                 
                 # Set the device name
-                await context.add_init_script("Object.defineProperty(navigator, 'platform', {get: () => 'Windows PC'})")
-
                 page = await context.new_page()
                 await page.goto('https://www.linkedin.com/login')
                 await page.fill('#username', self.username)
                 await page.fill('#password', self.password)
                 await page.click('button:has-text("Sign in")')
-                await page.wait_for_load_state('networkidle')
+                
+                # Add error handling and additional checks
+                try:
+                    await page.wait_for_selector('.feed-identity-module', timeout=30000)
+                except Exception as e:
+                    self.logger.error(f"Error after login attempt: {str(e)}")
+                    return None
+                
+                # Check if we're on the feed page
+                if 'feed' not in page.url:
+                    self.logger.error("Login unsuccessful, not redirected to feed page")
+                    return None
                 
                 cookies = await context.cookies()
                 li_at = next((cookie for cookie in cookies if cookie['name'] == 'li_at'), None)
@@ -100,7 +109,7 @@ class LinkedInOperations:
                 await context.add_cookies([cookie])
                 
                 page = await context.new_page()
-                await page.goto('https://www.linkedin.com/feed/', wait_until="networkidle", timeout=20000)
+                await page.goto('https://www.linkedin.com/feed/', wait_until="networkidle", timeout=30000)
                 
                 # Check if we're still on the feed page (indicating a successful login)
                 current_url = page.url
